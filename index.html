@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incoming Message...</title>
+<style>
+    body { background-color: #1a202c; font-family: sans-serif; margin: 0; }
+    #chat-container { display: flex; flex-direction: column; height: 100vh; max-width: 700px; margin: auto; background-color: #2d3748; }
+    #message-window { flex-grow: 1; padding: 20px; overflow-y: auto; }
+    .message { display: flex; margin-bottom: 15px; max-width: 80%; }
+    .message img.avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; }
+    .message .text-bubble { padding: 10px 15px; border-radius: 18px; color: white; }
+    .bot .text-bubble { background-color: #4a5568; border-bottom-left-radius: 2px; }
+    .user { align-self: flex-end; flex-direction: row-reverse; }
+    .user .text-bubble { background-color: #4299e1; border-bottom-right-radius: 2px; margin-right: 10px; }
+    .user img.avatar { margin-right: 0; margin-left: 10px; background: #a0aec0; }
+    #input-area { display: flex; padding: 10px; background-color: #1a202c; }
+    #user-input { flex-grow: 1; border: 1px solid #4a5568; background: #2d3748; color: white; padding: 10px; border-radius: 15px; margin-right: 10px; }
+    #send-btn { background: #4299e1; color: white; border: none; padding: 10px 20px; border-radius: 15px; cursor: pointer; }
+    .puzzle-image { max-width: 100%; border-radius: 10px; margin-top: 10px; border: 2px solid #4a5568; }
+</style>
+</head>
+<body>
+<div id="chat-container">
+    <div id="message-window"></div>
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="Type your guess...">
+        <button id="send-btn">Send</button>
+    </div>
+</div>
+
+<script>
+    const messageWindow = document.getElementById('message-window');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    let gamePhase = 'identification'; // 'identification' -> 'trial'
+
+    const responses = {
+        'default': "Ask a real question. I don't have time for games... unless they involve dragons.",
+        'are you a man': "No.",
+        'are you a woman': "I'm a Viking.",
+        'are you human': "Yes. What kind of question is that?",
+        'do you have a dragon': "The best. A Deadly Nadder named Stormfly.",
+        'are you a viking': "Born and raised on Berk.",
+        'do you have an axe': "A double-bladed one. Want to see it up close?",
+        'are you astrid': "Took you long enough. Yes.",
+        'is your name astrid': "Took you long enough. Yes.",
+        'are you animated': "Yes.",
+        'are you from a movie': "Yes. Three of them, actually.",
+        'do you know hiccup': "Of course. He's my husband."
+    };
+
+    function addMessage(sender, text, imageSrc = null) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+        const avatar = `<img class="avatar" src="${sender === 'bot' ? 'astrid_avatar.png' : ''}" alt="avatar">`;
+        let textContent = `<div class="text-bubble">${text}</div>`;
+        if (imageSrc) {
+            textContent += `<img class="puzzle-image" src="${imageSrc}">`;
+        }
+        messageDiv.innerHTML = avatar + textContent;
+        messageWindow.appendChild(messageDiv);
+        messageWindow.scrollTop = messageWindow.scrollHeight;
+    }
+
+    function getBotResponse(input) {
+        input = input.trim().toLowerCase();
+        if (gamePhase === 'identification') {
+            if (input === 'are you astrid' || input === 'is your name astrid') {
+                gamePhase = 'trial';
+                addMessage('bot', responses[input]);
+                setTimeout(() => addMessage('bot', "Alright, you're not as slow as you look. But guessing my name doesn't mean you've earned anything."), 1000);
+                setTimeout(() => {
+                    addMessage('bot', "Vikings earn their keep. This is your trial. I'm sending you a runestone. It's written in our ancient alphabet. Figure out what it says. That's your final clue.");
+                }, 2500);
+                setTimeout(() => {
+                    // This is where the rune puzzle is revealed
+                    addMessage('bot', '<img class="puzzle-image" src="runestone.png" alt="A runestone with a cryptic message.">');
+                }, 4000);
+            } else {
+                const response = responses[input] || responses['default'];
+                addMessage('bot', response);
+            }
+        } else {
+            addMessage('bot', "The trial is in front of you. Stop talking and start thinking.");
+        }
+    }
+
+    function handleSend() {
+        const text = userInput.value;
+        if (!text) return;
+        addMessage('user', text);
+        userInput.value = '';
+        setTimeout(() => getBotResponse(text), 1000);
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    userInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') handleSend();
+    });
+
+    // Initial message from Astrid
+    setTimeout(() => {
+        addMessage('bot', "So, you made it out of that maze. Don't look so proud, that was the easy part.");
+    }, 1000);
+    setTimeout(() => {
+        addMessage('bot', "Before I tell you anything, you have to tell me who I am.");
+    }, 2500);
+
+</script>
+</body>
+</html>
