@@ -1,114 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Incoming Message...</title>
-<style>
-    body { background-color: #1a202c; font-family: sans-serif; margin: 0; }
-    #chat-container { display: flex; flex-direction: column; height: 100vh; max-width: 700px; margin: auto; background-color: #2d3748; }
-    #message-window { flex-grow: 1; padding: 20px; overflow-y: auto; }
-    .message { display: flex; margin-bottom: 15px; max-width: 80%; }
-    .message img.avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; }
-    .message .text-bubble { padding: 10px 15px; border-radius: 18px; color: white; }
-    .bot .text-bubble { background-color: #4a5568; border-bottom-left-radius: 2px; }
-    .user { align-self: flex-end; flex-direction: row-reverse; }
-    .user .text-bubble { background-color: #4299e1; border-bottom-right-radius: 2px; margin-right: 10px; }
-    .user img.avatar { margin-right: 0; margin-left: 10px; background: #a0aec0; }
-    #input-area { display: flex; padding: 10px; background-color: #1a202c; }
-    #user-input { flex-grow: 1; border: 1px solid #4a5568; background: #2d3748; color: white; padding: 10px; border-radius: 15px; margin-right: 10px; }
-    #send-btn { background: #4299e1; color: white; border: none; padding: 10px 20px; border-radius: 15px; cursor: pointer; }
-    .puzzle-image { max-width: 100%; border-radius: 10px; margin-top: 10px; border: 2px solid #4a5568; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Message For You</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap');
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            overflow: hidden;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #start-screen button {
+            font-size: 2rem; padding: 20px 40px; cursor: pointer; border-radius: 10px;
+            border: 2px solid #00ff7f; background-color: transparent; color: #00ff7f;
+            font-family: 'Orbitron', sans-serif; transition: all 0.3s;
+        }
+        #start-screen button:hover { background-color: #00ff7f; color: #121212; }
+        #game-screen { display: none; }
+        #timer { font-family: 'Orbitron', sans-serif; font-size: 4rem; color: #ff4136; margin-bottom: 20px; }
+        #clue-box {
+            background: #1e1e1e; border: 1px solid #444; padding: 20px;
+            border-radius: 8px; margin-bottom: 30px; position: relative;
+        }
+        #clue-box p { font-size: 1.2rem; margin: 0; }
+        #close-clue {
+            position: absolute; top: 10px; right: 15px; font-size: 1.5rem;
+            color: #777; cursor: pointer;
+        }
+        #keypad-area { display: flex; flex-direction: column; align-items: center; }
+        #code-display {
+            width: 70%; height: 60px; background: #1e1e1e; border: 1px solid #555;
+            border-radius: 5px; margin-bottom: 20px; display: flex; justify-content: center;
+            align-items: center; font-size: 3rem; letter-spacing: 15px; font-family: 'Orbitron', sans-serif;
+        }
+        #keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 80%; }
+        #keypad button {
+            height: 60px; font-size: 1.8rem; background: #333; color: #e0e0e0;
+            border: none; border-radius: 50%; cursor: pointer; transition: background-color 0.2s;
+        }
+        #keypad button:active { background-color: #555; }
+        #success-screen { display: none; flex-direction: column; align-items: center; }
+        #success-screen h1 { font-size: 2.5rem; color: #00ff7f; }
+        #success-screen div { font-size: 5rem; }
+    </style>
 </head>
 <body>
-<div id="chat-container">
-    <div id="message-window"></div>
-    <div id="input-area">
-        <input type="text" id="user-input" placeholder="Type your guess...">
-        <button id="send-btn">Send</button>
+
+<div class="container">
+    <div id="start-screen">
+        <button id="start-btn">START</button>
+    </div>
+
+    <div id="game-screen">
+        <div id="timer">01:00:00</div>
+        <div id="clue-box">
+            <span id="close-clue">&times;</span>
+            <p>"I left you a note in your car where you always left mine."</p>
+        </div>
+        <div id="keypad-area">
+            <div id="code-display">----</div>
+            <div id="keypad"></div>
+        </div>
+    </div>
+
+    <div id="success-screen">
+        <h1>You did it!<br>Happy Anniversary!</h1>
+        <div>😍😘</div>
     </div>
 </div>
 
 <script>
-    const messageWindow = document.getElementById('message-window');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
+    const FINAL_CODE = "1248"; // IMPORTANT: Change this to your final 4-digit code
 
-    let gamePhase = 'identification'; // 'identification' -> 'trial'
+    const startBtn = document.getElementById('start-btn');
+    const gameScreen = document.getElementById('game-screen');
+    const successScreen = document.getElementById('success-screen');
+    const timerDisplay = document.getElementById('timer');
+    const clueBox = document.getElementById('clue-box');
+    const closeClueBtn = document.getElementById('close-clue');
+    const codeDisplay = document.getElementById('code-display');
+    const keypadContainer = document.getElementById('keypad');
 
-    const responses = {
-        'default': "Ask a real question. I don't have time for games... unless they involve dragons.",
-        'are you a man': "No.",
-        'are you a woman': "I'm a Viking.",
-        'are you human': "Yes. What kind of question is that?",
-        'do you have a dragon': "The best. A Deadly Nadder named Stormfly.",
-        'are you a viking': "Born and raised on Berk.",
-        'do you have an axe': "A double-bladed one. Want to see it up close?",
-        'are you astrid': "Took you long enough. Yes.",
-        'is your name astrid': "Took you long enough. Yes.",
-        'are you animated': "Yes.",
-        'are you from a movie': "Yes. Three of them, actually.",
-        'do you know hiccup': "Of course. He's my husband."
-    };
+    let timerInterval;
+    let enteredCode = "";
 
-    function addMessage(sender, text, imageSrc = null) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender}`;
-        const avatar = `<img class="avatar" src="${sender === 'bot' ? 'astrid_avatar.png' : ''}" alt="avatar">`;
-        let textContent = `<div class="text-bubble">${text}</div>`;
-        if (imageSrc) {
-            textContent += `<img class="puzzle-image" src="${imageSrc}">`;
-        }
-        messageDiv.innerHTML = avatar + textContent;
-        messageWindow.appendChild(messageDiv);
-        messageWindow.scrollTop = messageWindow.scrollHeight;
+    function initKeypad() {
+        const keys = ['1','2','3','4','5','6','7','8','9','C','0','✓'];
+        keys.forEach(key => {
+            const btn = document.createElement('button');
+            btn.textContent = key;
+            btn.onclick = () => handleKeyPress(key);
+            keypadContainer.appendChild(btn);
+        });
     }
 
-    function getBotResponse(input) {
-        input = input.trim().toLowerCase();
-        if (gamePhase === 'identification') {
-            if (input === 'are you astrid' || input === 'is your name astrid') {
-                gamePhase = 'trial';
-                addMessage('bot', responses[input]);
-                setTimeout(() => addMessage('bot', "Alright, you're not as slow as you look. But guessing my name doesn't mean you've earned anything."), 1000);
-                setTimeout(() => {
-                    addMessage('bot', "Vikings earn their keep. This is your trial. I'm sending you a runestone. It's written in our ancient alphabet. Figure out what it says. That's your final clue.");
-                }, 2500);
-                setTimeout(() => {
-                    // This is where the rune puzzle is revealed
-                    addMessage('bot', '<img class="puzzle-image" src="runestone.png" alt="A runestone with a cryptic message.">');
-                }, 4000);
-            } else {
-                const response = responses[input] || responses['default'];
-                addMessage('bot', response);
-            }
+    function handleKeyPress(key) {
+        if (key === 'C') {
+            enteredCode = "";
+        } else if (key === '✓') {
+            checkCode();
+        } else if (enteredCode.length < 4) {
+            enteredCode += key;
+        }
+        updateCodeDisplay();
+        if (enteredCode.length === 4) {
+            checkCode();
+        }
+    }
+
+    function updateCodeDisplay() {
+        codeDisplay.textContent = enteredCode.padEnd(4, '-');
+    }
+
+    function checkCode() {
+        if (enteredCode === FINAL_CODE) {
+            clearInterval(timerInterval);
+            localStorage.removeItem('anniversaryTimerEndTime');
+            gameScreen.style.display = 'none';
+            successScreen.style.display = 'flex';
         } else {
-            addMessage('bot', "The trial is in front of you. Stop talking and start thinking.");
+            alert("Incorrect Code");
+            enteredCode = "";
+            updateCodeDisplay();
         }
     }
 
-    function handleSend() {
-        const text = userInput.value;
-        if (!text) return;
-        addMessage('user', text);
-        userInput.value = '';
-        setTimeout(() => getBotResponse(text), 1000);
-    }
+    function startTimer() {
+        let endTime = localStorage.getItem('anniversaryTimerEndTime');
+        if (!endTime) {
+            endTime = Date.now() + 3600 * 1000; // 1 hour from now
+            localStorage.setItem('anniversaryTimerEndTime', endTime);
+        }
 
-    sendBtn.addEventListener('click', handleSend);
-    userInput.addEventListener('keyup', (e) => {
-        if (e.key === 'Enter') handleSend();
+        timerInterval = setInterval(() => {
+            const remaining = endTime - Date.now();
+            if (remaining <= 0) {
+                clearInterval(timerInterval);
+                timerDisplay.textContent = "00:00:00";
+                alert("Time's up!");
+                return;
+            }
+            const hours = Math.floor((remaining / (1000 * 60 * 60)) % 24).toString().padStart(2, '0');
+            const minutes = Math.floor((remaining / 1000 / 60) % 60).toString().padStart(2, '0');
+            const seconds = Math.floor((remaining / 1000) % 60).toString().padStart(2, '0');
+            timerDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+        }, 1000);
+    }
+    
+    // Event Listeners
+    startBtn.addEventListener('click', () => {
+        document.getElementById('start-screen').style.display = 'none';
+        gameScreen.style.display = 'block';
+        startTimer();
     });
 
-    // Initial message from Astrid
-    setTimeout(() => {
-        addMessage('bot', "So, you made it out of that maze. Don't look so proud, that was the easy part.");
-    }, 1000);
-    setTimeout(() => {
-        addMessage('bot', "Before I tell you anything, you have to tell me who I am.");
-    }, 2500);
+    closeClueBtn.addEventListener('click', () => {
+        clueBox.style.display = 'none';
+    });
 
+    // Check if timer was already running
+    if (localStorage.getItem('anniversaryTimerEndTime')) {
+        startBtn.click();
+    }
+    if (localStorage.getItem('clueDismissed')) {
+        clueBox.style.display = 'none';
+    }
+    closeClueBtn.addEventListener('click', () => {
+        clueBox.style.display = 'none';
+        localStorage.setItem('clueDismissed', 'true');
+    });
+
+    initKeypad();
 </script>
+
 </body>
 </html>
